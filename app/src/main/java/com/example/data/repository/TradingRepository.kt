@@ -1,7 +1,6 @@
 package com.example.data.repository
 
 import android.util.Log
-import com.example.BuildConfig
 import com.example.data.api.Content
 import com.example.data.api.GenerateContentRequest
 import com.example.data.api.GenerationConfig
@@ -99,6 +98,13 @@ class TradingRepository(private val tradingDao: TradingDao) {
     /**
      * Execute high-safety simulated transaction under Multi-Agent review
      */
+    companion object {
+        // Güvenlik limitleri: tek işlemde maksimum miktar ve fiyat sınırları
+        private const val MAX_QUANTITY = 10_000.0    // maksimum lot
+        private const val MAX_PRICE = 100_000_000.0   // maksimum birim fiyat (TRY)
+        private const val MIN_QUANTITY = 0.0001       // minimum lot (dust limit)
+    }
+
     suspend fun executeTransaction(
         symbol: String,
         type: String, // "AL" or "SAT"
@@ -106,7 +112,20 @@ class TradingRepository(private val tradingDao: TradingDao) {
         price: Double,
         agentOpinion: String
     ): Boolean = withContext(Dispatchers.IO) {
+        // Alt ve üst sınır validasyonu
         if (quantity <= 0 || price <= 0) return@withContext false
+        if (quantity > MAX_QUANTITY) {
+            Log.e("TradingRepository", "Güvenlik ihlali: Maksimum lot aşıldı ($MAX_QUANTITY)")
+            return@withContext false
+        }
+        if (price > MAX_PRICE) {
+            Log.e("TradingRepository", "Güvenlik ihlali: Maksimum fiyat aşıldı ($MAX_PRICE)")
+            return@withContext false
+        }
+        if (quantity < MIN_QUANTITY) {
+            Log.w("TradingRepository", "İşlem miktarı minimum lot altında, iptal edildi")
+            return@withContext false
+        }
 
         val cashAsset = tradingDao.getPortfolioAssetBySymbol("TRY") ?: PortfolioAsset("TRY", "Türk Lirası", 0.0, 1.0)
         val targetAsset = tradingDao.getPortfolioAssetBySymbol(symbol) ?: PortfolioAsset(symbol, symbol, 0.0, 0.0)
@@ -202,11 +221,6 @@ class TradingRepository(private val tradingDao: TradingDao) {
         recentCandles: List<MarketCandle>,
         policyWeights: Map<String, Double> // Weighting strategy
     ): String = withContext(Dispatchers.IO) {
-        val apiKey = BuildConfig.GEMINI_API_KEY
-        if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
-            return@withContext generateSimulatedMultiAgentResponse(symbol, currentPrice, recentCandles, policyWeights)
-        }
-
         // High precision indicators calculated for context injection
         val lastPrices = recentCandles.takeLast(10).map { it.close }
         val rsiValue = calculateRSI(lastPrices)
@@ -247,12 +261,12 @@ class TradingRepository(private val tradingDao: TradingDao) {
                 )
             )
 
-            val response = RetrofitClient.geminiService.generateContent(apiKey, request)
+            val response = RetrofitClient.geminiService.generateContent(request)
             response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
                 ?: "Yapay zeka analiz raporu alınamadı."
         } catch (e: Exception) {
-            Log.e("TradingRepository", "Gemini API Hata: ", e)
-            return@withContext "API Hatası: ${e.message}\n\n" +
+            Log.e("TradingRepository", "AI proxy çağrısı başarısız oldu. Detay: ${e.message}", e)
+            return@withContext "⚠️ Yapay zeka analiz sunucusuna şu anda erişilemiyor. Platform, yerel optimize 'Çevrimdışı Yapay Zeka Ajan Simülatörü' ile devam ediyor.\n\n" +
                     generateSimulatedMultiAgentResponse(symbol, currentPrice, recentCandles, policyWeights)
         }
     }
@@ -308,7 +322,7 @@ class TradingRepository(private val tradingDao: TradingDao) {
         val takeProfitValue = if (rsiValue < 45.0) currentPrice * 1.10 else currentPrice * 0.92
 
         return """
-            ⚠️ **[AkaTrade Bilgilendirme]**: API Anahtarı eksik veya geçersiz. AI Studio Secrets panelinden `GEMINI_API_KEY` ekleyene kadar platform yerel optimize 'Çevrimdışı Yapay Zeka Ajan Simülatörü' kullanacaktır.
+            ⚠️ **[AkaTrade Bilgilendirme]**: Yapay zeka analiz sunucusuna bağlanılamadı. Platform, yerel optimize 'Çevrimdışı Yapay Zeka Ajan Simülatörü' ile devam ediyor.
             
             ```
             ====================== OTONOM COKLU AJAN HAVUZU GÜNLÜGÜ ======================

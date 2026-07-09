@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AkaTrade AI - Network Security Configuration
+    Finansal uygulama için katı TLS/SSL politikaları.
+
+    Sertifika pin'leri q-rdan-14243167.cloudfunctions.net domain'ine karşı
+    openssl ile doğrulanmıştır (2026-07-09).
+
+    Sertifika zinciri:
+      Leaf:    CN=misc.google.com          → pin: 6rQb9W...
+      Ara CA:  CN=WE2 (GTS)               → pin: vh78KS... (yedek)
+      Root:    CN=GTS Root R4 (GlobalSign)
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">cloudfunctions.net</domain>
+        <pin-set expiration="2027-12-31">
+            <!-- Leaf sertifika: CN=misc.google.com -->
+            <pin digest="SHA-256">6rQb9WdLsTAXq5d8qEx6C68pNbZh6YyT1RWpD5fveUs=</pin>
+            <!-- Yedek (ara CA): CN=WE2, O=Google Trust Services -->
+            <pin digest="SHA-256">vh78KSg1Ry4NaqGDV10w/cTb9VH3BQUZoCWNa93W/EY=</pin>
+        </pin-set>
+    </domain-config>
+</network-security-config>

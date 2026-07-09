@@ -1,13 +1,15 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older than API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AkaTrade AI - Auto Backup Rules
+    Hassas finansal verilerin bulut yedeklemesini engelle.
+    Not: AndroidManifest.xml'de allowBackup="false" ile tamamen devre dışı bırakıldı,
+    bu kurallar defense-in-depth olarak eklenmiştir.
 -->
 <full-backup-content>
-    <!--
-   <include domain="sharedpref" path="."/>
-   <exclude domain="sharedpref" path="device.xml"/>
--->
+    <!-- Veritabanı dizinini yedekleme kapsamından çıkar -->
+    <exclude domain="database" path="." />
+    <!-- SharedPreferences'i yedekleme kapsamından çıkar -->
+    <exclude domain="sharedpref" path="." />
+    <!-- Sadece önbellek ve UI state'lerine izin ver -->
+    <include domain="file" path="." />
 </full-backup-content>

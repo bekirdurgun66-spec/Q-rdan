@@ -1,21 +1,81 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# =============================================================================
+# AkaTrade AI - ProGuard / R8 Güvenlik ve Optimizasyon Kuralları
+# =============================================================================
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# --- BuildConfig proxy yapılandırma alanlarını gizle ---
+# PROXY_BASE_URL ve PROXY_API_KEY'in decompile edilerek okunmasını zorlaştır
+-assumenosideeffects class com.example.BuildConfig {
+    static final java.lang.String PROXY_BASE_URL;
+    static final java.lang.String PROXY_API_KEY;
+}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# --- Retrofit ---
+-keepattributes Signature
+-keepattributes Exceptions
+-keepattributes *Annotation*
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+-keep class retrofit2.** { *; }
+-keepclasseswithmembers class * {
+    @retrofit2.http.* <methods>;
+}
+-dontwarn retrofit2.**
+-dontwarn okhttp3.**
+-dontwarn okio.**
+
+# --- OkHttp ---
+-keep class okhttp3.** { *; }
+-keep interface okhttp3.** { *; }
+
+# --- Room (Veritabanı) ---
+-keep class androidx.room.** { *; }
+-keep class * extends androidx.room.RoomDatabase
+-keep @androidx.room.Entity class *
+-dontwarn androidx.room.paging.**
+-keep class com.example.data.model.** { *; }
+
+# --- Moshi (JSON serialization) ---
+-keep class com.squareup.moshi.** { *; }
+-keep class com.example.data.api.** { *; }
+-keep @com.squareup.moshi.JsonClass class *
+-keepclasseswithmembers class * {
+    @com.squareup.moshi.Json <fields>;
+}
+-keep class kotlin.reflect.jvm.internal.impl.builtins.** { *; }
+-keep class kotlin.Metadata { *; }
+
+# --- Kotlin Coroutines ---
+-keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
+-keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+-keepclassmembers class kotlinx.coroutines.** {
+    volatile <fields>;
+}
+
+# --- AndroidX Compose ---
+-dontwarn androidx.compose.**
+-keep class androidx.compose.** { *; }
+
+# --- Firebase ---
+-keep class com.google.firebase.** { *; }
+-dontwarn com.google.firebase.**
+
+# --- ViewModel ve LiveData ---
+-keep class * extends androidx.lifecycle.ViewModel { *; }
+-keep class * extends androidx.lifecycle.AndroidViewModel { *; }
+
+# --- Kotlin reflection + Serializable ---
+-keepattributes RuntimeVisibleAnnotations
+-keep class kotlin.** { *; }
+-keep class kotlin.Metadata { *; }
+-keepclassmembers class * implements java.io.Serializable {
+    static final long serialVersionUID;
+    private static final java.io.ObjectStreamField[] serialPersistentFields;
+    !static !transient <fields>;
+    private void writeObject(java.io.ObjectOutputStream);
+    private void readObject(java.io.ObjectInputStream);
+    java.lang.Object writeReplace();
+    java.lang.Object readResolve();
+}
+
+# --- Genel güvenlik: stack trace'lerden hassas verileri temizle ---
+-renamesourcefileattribute SourceFile
+-keepattributes SourceFile,LineNumberTable

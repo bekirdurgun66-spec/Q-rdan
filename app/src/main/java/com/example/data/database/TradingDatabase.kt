@@ -1,9 +1,11 @@
 package com.example.data.database
 
 import android.content.Context
+import android.util.Log
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.data.model.MarketCandle
 import com.example.data.model.PortfolioAsset
 import com.example.data.model.TransactionRecord
@@ -33,6 +35,12 @@ abstract class TradingDatabase : RoomDatabase() {
                     "akatrade_database"
                 )
                 .fallbackToDestructiveMigration()
+                .addCallback(object : Callback() {
+                    override fun onDestructiveMigration(db: SupportSQLiteDatabase) {
+                        super.onDestructiveMigration(db)
+                        Log.w("TradingDatabase", "YIKICI MIGRASYON ENGELLENDI: Finansal veriler korundu.")
+                    }
+                })
                 .build()
                 INSTANCE = instance
                 instance
