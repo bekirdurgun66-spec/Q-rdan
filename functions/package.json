@@ -4,7 +4,7 @@
   "description": "AkaTrade AI - Gemini API Proxy (Firebase Cloud Function)",
   "main": "index.js",
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "dependencies": {
     "firebase-functions": "^4.9.0",
